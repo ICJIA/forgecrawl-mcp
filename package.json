@@ -41,6 +41,7 @@
     "url": "git+https://github.com/ICJIA/forgecrawl-mcp.git"
   },
   "dependencies": {
+    "@cfworker/json-schema": "^4.1.1",
     "@modelcontextprotocol/server": "^2.0.0-alpha.2",
     "@mozilla/readability": "^0.6.0",
     "cheerio": "^1.0.0",

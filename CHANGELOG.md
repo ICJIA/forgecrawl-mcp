@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] — 2026-05-01
+
+### Fixed
+
+- **Server fails to start: "Cannot find package '@cfworker/json-schema'"** when installed via `npx -y @icjia/forgecrawl` (the path Claude Code uses). The MCP SDK (`@modelcontextprotocol/server`) imports `@cfworker/json-schema` internally but does not declare it as a runtime dependency, so consumers must list it themselves. Sibling servers (`@icjia/lightcap`, `@icjia/contrastcap`, `@icjia/axecap`) all carry this declaration; forgecrawl was missing it. Added to `dependencies`. Without this fix, `claude mcp add forgecrawl ... -- npx -y @icjia/forgecrawl` reports "Failed to connect" because the server crashes during module load before the MCP handshake completes.
+
+## [0.1.3] — 2026-05-01
+
+### Changed
+
+- Released via `./publish.sh patch` after the 0.1.2 docs commit; first-time tag from the publish path bumps the version on every run, so 0.1.2 was committed locally but 0.1.3 is the version actually on npm. Functionally identical to 0.1.2.
+
 ## [0.1.2] — 2026-05-01
 
 Documentation only. No runtime change.
