@@ -10,6 +10,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 - README: contributor-facing note that `npx -y @icjia/forgecrawl` fails with `sh: forgecrawl: command not found` (exit 127) when run with cwd inside this repo. npx detects the matching local `package.json`, looks for the bin in this repo's `node_modules/.bin/`, and finds nothing because a package isn't installed as its own dependency. End users (whose cwd is their own project) don't hit this; the trap is contributor-only. Cross-linked from **Troubleshooting** to the existing **Local development** snippet, which already uses the `node $(pwd)/src/server.js` form that sidesteps the collision and runs the working tree directly.
 
+### Fixed
+
+- `publish.sh` post-publish smoke test no longer fails with `ETARGET` against healthy releases. The earlier `npm view` call (used for first-time-publish detection) warms `~/.npm/_cacache` with a packument that doesn't yet list the about-to-be-published version; npm's installer then trusts that stale cache and refuses to install the new version even though the registry already serves it. The 3×/5s retry loop chased a CDN-propagation theory, but the lag was local. Fix: run the smoke-test `npx` through a fresh `mktemp -d` cache via `--cache "$SMOKE_CACHE"` so it sees only what the registry returns, with cleanup via `trap … EXIT`. The `~/.npm/_npx` clear is still done; the new isolated `_cacache` is what removes the false negative.
+
 ## [0.1.5] — 2026-05-01
 
 ### Changed
