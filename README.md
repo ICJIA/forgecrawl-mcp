@@ -216,6 +216,8 @@ npx -y @icjia/forgecrawl --help
 
 If that succeeds, restart your MCP client. `publish.sh` runs the same clear-and-retry as a post-publish smoke test, so a published artifact reaching the registry has already been verified to launch from a clean cache.
 
+**Working inside the `forgecrawl-mcp` repo?** Same symptom, different cause: your cwd's `package.json` has the same `name` as the requested package, so npx looks for the bin in this repo's `node_modules/.bin/` and finds nothing (a package isn't installed as its own dependency). Clearing the npx cache won't help — register the dev MCP via the [Local development](#local-development) snippet instead.
+
 ### First-run timeout (Chromium download)
 
 The `postinstall` step downloads Chromium (~150 MB) for SPA support. On the very first `npx -y @icjia/forgecrawl`, this can take longer than the MCP client's startup window and surface as "Failed to connect." Either warm the cache once in a terminal:
@@ -537,6 +539,8 @@ npm install
 claude mcp add forgecrawl -s user -- node $(pwd)/src/server.js
 # restart Claude Code, then ask it to scrape something
 ```
+
+**Don't register the MCP as `npx -y @icjia/forgecrawl` while working inside this repo.** With cwd in the project, npx sees the matching local `package.json`, tries to spawn `forgecrawl` from `node_modules/.bin/` — which doesn't exist (a package isn't installed as its own dep) — and exits `127` with `sh: forgecrawl: command not found`. The `node $(pwd)/src/server.js` form above sidesteps the collision *and* runs your working tree, so edits take effect on the next MCP restart.
 
 ## Publishing to npm
 

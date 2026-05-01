@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- README: contributor-facing note that `npx -y @icjia/forgecrawl` fails with `sh: forgecrawl: command not found` (exit 127) when run with cwd inside this repo. npx detects the matching local `package.json`, looks for the bin in this repo's `node_modules/.bin/`, and finds nothing because a package isn't installed as its own dependency. End users (whose cwd is their own project) don't hit this; the trap is contributor-only. Cross-linked from **Troubleshooting** to the existing **Local development** snippet, which already uses the `node $(pwd)/src/server.js` form that sidesteps the collision and runs the working tree directly.
+
 ## [0.1.5] — 2026-05-01
 
 ### Changed
