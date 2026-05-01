@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] — 2026-05-01
+
+Documentation only. No runtime change.
+
+### Changed
+
+- README expanded with worked use cases by role: developers (multi-doc triage, changelog migration sections, GitHub READMEs without `git clone`, SPA scraping, local HTML conversion), designers / content people (competitor pricing-page audits, content-model extraction), technical writers / researchers (literature reviews with citation metadata, statute / policy diffs across jurisdictions), and accessibility auditors (forgecrawl + axecap pairing).
+- New "Why an MCP server, not just have Claude fetch the URL" comparison table — calls out the four levers (token economy via summary mode, SPA support via auto-fallback, local-only fetch, SSRF + prompt-injection prevention).
+- CLI examples block: added `cat saved-page.html | forgecrawl extract-html -m markdown` to surface the local-HTML path.
+
+## [0.1.1] — 2026-05-01
+
+First-time npm publish (no functional change vs. 0.1.0; published via `./publish.sh` which bumps before pushing). The 0.1.0 entry below documents the substantive initial release.
+
 ## [0.1.0] — 2026-05-01
 
 Initial release. Pre-publish red/blue team security audit completed; the findings catalog and resulting fixes are listed under **Security** below.

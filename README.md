@@ -316,9 +316,139 @@ forgecrawl status
 
 # Verbose logging
 forgecrawl --verbose scrape https://example.com
+
+# Pipe HTML you already have to Markdown
+cat saved-page.html | forgecrawl extract-html -m markdown
 ```
 
 When run without a subcommand, `forgecrawl` starts in MCP server mode (stdio transport).
+
+## What you'd actually use this for
+
+The point isn't "Claude can read a webpage." Claude already can. The point is **Claude can read 30 webpages cheaply, decide which 3 matter, and pull those in full** — because forgecrawl gives the model a `summary` lever, an SPA-capable renderer, and pre-fetch DOM trimming. Concrete workflows:
+
+### For developers
+
+**Compare framework / library docs without burning context**
+
+```
+You: "Compare React Server Components, Solid, Qwik, Astro, and Svelte 5
+     for an SSR-heavy app. Skim each project's docs site first."
+Claude: [scrape_url × 5 with mode='summary']     ← ~2.5k tokens total
+Claude: "Astro and Svelte 5 look most aligned with your constraints.
+        Pulling those in full."
+Claude: [scrape_url × 2 with mode='markdown']    ← only pays for what matters
+```
+
+Without forgecrawl: 5 raw HTML pages × ~25k tokens each = a context window already half-spent before the comparison starts.
+
+**Find the migration / breaking-changes section in a long changelog**
+
+```
+You: "What's the migration path from v17 to v18 of @opentelemetry/api?"
+Claude: [scrape_url … mode='preview' previewChars=2000]
+Claude: "The migration section is at #migration-from-v17. Re-fetching just that."
+Claude: [scrape_url … selectors.include='#migration-from-v17' mode='markdown']
+```
+
+`selectors.include` runs in Cheerio *before* Readability — the rest of the changelog never enters the model's context.
+
+**Read a GitHub README without `git clone`**
+
+```
+You: "What does the @icjia/lightcap MCP server do? Look at its README."
+Claude: [scrape_url https://github.com/ICJIA/lightcap-mcp mode='markdown']
+```
+
+GitHub's rendered README hits Readability cleanly. Static path, no auth, no rate-limit, no clone.
+
+**Scrape an SPA admin dashboard or doc site**
+
+```
+You: "Read the React docs on Suspense and explain the async render fence."
+Claude: [scrape_url https://react.dev/reference/react/Suspense
+         render='auto' mode='markdown']
+```
+
+Static fetch returns near-empty HTML (React mounts client-side). Auto-fallback fires Playwright, page mounts, content is extracted, response includes `renderedWith: 'js'` so Claude knows it paid the browser-launch cost.
+
+**Convert HTML you already have on disk**
+
+```bash
+cat saved-page.html | forgecrawl extract-html -m markdown
+```
+
+Or via MCP, `extract_html` lets Claude convert HTML it already pulled (from a logged-in session, a fixture, a CMS export) without paying for the network round-trip. No data leaves your machine.
+
+### For designers / content people
+
+**Pull copy and structure from a competitor's pricing page**
+
+```
+You: "I'm redesigning our pricing page. Pull the structure and copy
+     from Stripe, Vercel, and Linear's pricing pages."
+Claude: [scrape_url × 3 mode='markdown' selectors.include='main']
+```
+
+The `selectors.include='main'` skips nav and footer. Markdown output preserves the hierarchy of headings, tier names, feature lists, and CTA copy — it's effectively a content audit in a structured form.
+
+**Reference content for a redesign — without the design**
+
+```
+You: "What's actually IN the IRS Form 1040 instructions PDF page on
+     irs.gov? Just the content, no nav."
+Claude: [scrape_url … selectors.exclude='nav, .breadcrumbs, footer'
+         mode='markdown' includeLinks=true]
+```
+
+Designers often need the *content model* of a page — the headings, the hierarchy, the cross-references. forgecrawl with `includeLinks: true` gives you exactly that as Markdown.
+
+### For technical writers / researchers
+
+**Build a literature review across many sources**
+
+```
+You: "I'm writing a brief on procedural justice in pretrial release.
+     Summarize each of these 12 academic and policy sources."
+Claude: [scrape_url × 12 mode='summary']        ← ~6k tokens
+Claude: [composes the brief, citing each by URL + author + date from the
+         structured metadata field]
+```
+
+The `metadata` block on every response carries `author`, `published`, `site`, `language` — Claude has citation data without you handing it over manually.
+
+**Track policy changes across jurisdictions**
+
+```
+You: "Pull the current bail-reform statute language from the AOICs of
+     Illinois, New Jersey, and California."
+Claude: [scrape_url × 3 mode='markdown' selectors.include='article, main']
+Claude: [diffs the statutes, flags the structural differences]
+```
+
+### For accessibility auditors
+
+**Pair forgecrawl with axecap for content + a11y audits**
+
+```
+You: "Audit the about page on icjia.illinois.gov for accessibility AND
+     check whether the page actually says what it claims to."
+Claude: [axecap.audit_url … ]   ← what's broken
+Claude: [scrape_url …]          ← what the page actually says
+Claude: [composes report combining a11y findings with content critique]
+```
+
+Most a11y tools tell you *that* a heading is wrong, not *what* the heading says. forgecrawl supplies the content half of that picture.
+
+### Why an MCP server, not "just have Claude fetch the URL"
+
+| Concern | Without forgecrawl | With forgecrawl |
+|---------|-------------------|-----------------|
+| 30 URLs to triage | 30 × ~25k tokens raw HTML | 30 × ~400 tokens summary, then drill into 2-3 |
+| SPA / JS-rendered page | Returns ~0 content | Auto-fallback to headless Chromium |
+| Internal corp page | Fetch leaves through whatever the model's network is | Local fetch, never leaves your host |
+| AWS / GCP / Azure metadata endpoints | No SSRF guarantees | Hard-blocked at every redirect hop |
+| Bidi / Unicode-tag prompt-injection | Page content reaches model verbatim | Stripped before output |
 
 ## Token economy
 
