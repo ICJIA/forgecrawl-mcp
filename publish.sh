@@ -134,24 +134,33 @@ else
 fi
 
 # ─── Post-publish smoke test ────────────────────────────────────────
-# Clear the local npx run cache and re-fetch the just-published version
-# from the registry. Catches: missing files in the tarball, broken bin
-# shim, bad shebang, postinstall failures — i.e., the things that make
-# a package "published but unusable."
+# Re-fetch the just-published version through a fresh, isolated npm cache
+# and run --help. Catches: missing files in the tarball, broken bin shim,
+# bad shebang, postinstall failures — the class of bug that makes a
+# package "published but unusable."
+#
+# Why an isolated cache: the FIRST_TIME check above runs `npm view`, which
+# warms ~/.npm/_cacache with a packument that does NOT list the version
+# we're about to publish. Without isolation, npm's installer consults
+# that stale packument, decides $NEW_VERSION doesn't exist, and emits
+# ETARGET — even though the registry already has it. ~/.npm/_npx (the
+# unpacked-CLI layer) is a separate cache and worth clearing too.
 
 info "Running post-publish smoke test..."
+SMOKE_CACHE=$(mktemp -d 2>/dev/null || echo "/tmp/forgecrawl-smoke-cache-$$")
+trap 'rm -rf "$SMOKE_CACHE" 2>/dev/null || true' EXIT
 rm -rf "${HOME}/.npm/_npx" 2>/dev/null || true
 
 SMOKE_OK=false
 SMOKE_OUTPUT=""
 for attempt in 1 2 3; do
-  if SMOKE_OUTPUT=$(cd /tmp && npx -y "$PACKAGE_NAME@$NEW_VERSION" --help 2>&1) \
+  if SMOKE_OUTPUT=$(cd /tmp && npx -y --cache "$SMOKE_CACHE" "$PACKAGE_NAME@$NEW_VERSION" --help 2>&1) \
      && echo "$SMOKE_OUTPUT" | grep -q "^Usage: forgecrawl"; then
     SMOKE_OK=true
     break
   fi
   if [[ $attempt -lt 3 ]]; then
-    warn "Smoke attempt $attempt did not succeed (registry may still be propagating). Retrying in 5s..."
+    warn "Smoke attempt $attempt did not succeed (registry CDN edge may still be propagating). Retrying in 5s..."
     sleep 5
   fi
 done
