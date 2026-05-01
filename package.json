@@ -1,6 +1,6 @@
 {
   "name": "@icjia/forgecrawl",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "MCP web-scraping server for Claude Code — fetches URLs, runs Mozilla Readability, and returns clean Markdown optimized for Claude's context window. Works with SPAs via headless Chromium.",
   "type": "module",
   "main": "src/server.js",
