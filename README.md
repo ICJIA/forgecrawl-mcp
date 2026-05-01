@@ -203,6 +203,29 @@ npx -y @icjia/forgecrawl
 
 No HTTP ports, no environment variables required.
 
+## Troubleshooting
+
+### `Failed to connect` or `sh: forgecrawl: command not found`
+
+If your MCP client reports **"Failed to connect"**, or running `npx -y @icjia/forgecrawl` in a terminal prints `sh: forgecrawl: command not found`, your local npx run cache likely has a stale entry (often seeded by an earlier failed install — e.g. a typo'd package name returning 404). Clear it and retry:
+
+```bash
+rm -rf ~/.npm/_npx
+npx -y @icjia/forgecrawl --help
+```
+
+If that succeeds, restart your MCP client. `publish.sh` runs the same clear-and-retry as a post-publish smoke test, so a published artifact reaching the registry has already been verified to launch from a clean cache.
+
+### First-run timeout (Chromium download)
+
+The `postinstall` step downloads Chromium (~150 MB) for SPA support. On the very first `npx -y @icjia/forgecrawl`, this can take longer than the MCP client's startup window and surface as "Failed to connect." Either warm the cache once in a terminal:
+
+```bash
+npx -y @icjia/forgecrawl --help
+```
+
+…or skip the Chromium download (loses JS-render / SPA support) by setting `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` in the server's environment.
+
 ## MCP Tools
 
 ### `scrape_url`

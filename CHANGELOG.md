@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] — 2026-05-01
+
+### Changed
+
+- `publish.sh` now runs a post-publish smoke test: clears the local npx run cache (`~/.npm/_npx`), re-fetches the just-published version from the registry, and runs `--help`. Retries 3× to absorb CDN propagation delay; the script exits non-zero if the smoke test fails so the operator sees it. Catches missing files in the tarball, broken `bin` shim, bad shebang, and postinstall failures — i.e., the class of bug that makes a package "published but unusable."
+- README: new **Troubleshooting** section covering the `sh: forgecrawl: command not found` / `Failed to connect` symptoms — both the stale-`~/.npm/_npx` failure mode that bit a user in the wild and the first-run Chromium-download timeout.
+
 ## [0.1.4] — 2026-05-01
 
 ### Fixed

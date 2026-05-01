@@ -133,6 +133,37 @@ else
   npm publish
 fi
 
+# ─── Post-publish smoke test ────────────────────────────────────────
+# Clear the local npx run cache and re-fetch the just-published version
+# from the registry. Catches: missing files in the tarball, broken bin
+# shim, bad shebang, postinstall failures — i.e., the things that make
+# a package "published but unusable."
+
+info "Running post-publish smoke test..."
+rm -rf "${HOME}/.npm/_npx" 2>/dev/null || true
+
+SMOKE_OK=false
+SMOKE_OUTPUT=""
+for attempt in 1 2 3; do
+  if SMOKE_OUTPUT=$(cd /tmp && npx -y "$PACKAGE_NAME@$NEW_VERSION" --help 2>&1) \
+     && echo "$SMOKE_OUTPUT" | grep -q "^Usage: forgecrawl"; then
+    SMOKE_OK=true
+    break
+  fi
+  if [[ $attempt -lt 3 ]]; then
+    warn "Smoke attempt $attempt did not succeed (registry may still be propagating). Retrying in 5s..."
+    sleep 5
+  fi
+done
+
+if [[ "$SMOKE_OK" == true ]]; then
+  info "Smoke test passed: npx -y $PACKAGE_NAME@$NEW_VERSION launches cleanly."
+else
+  error "Smoke test FAILED for $PACKAGE_NAME@$NEW_VERSION."
+  error "Last output:"
+  echo "$SMOKE_OUTPUT" >&2
+fi
+
 # ─── Git commit + tag ───────────────────────────────────────────────
 
 git add package.json package-lock.json
@@ -149,3 +180,9 @@ info "npm: https://www.npmjs.com/package/$PACKAGE_NAME"
 info ""
 info "Users will get this version on next Claude Code restart via:"
 info "  npx -y $PACKAGE_NAME"
+
+if [[ "$SMOKE_OK" != true ]]; then
+  echo ""
+  error "NOTE: post-publish smoke test failed — verify manually before announcing."
+  exit 1
+fi
