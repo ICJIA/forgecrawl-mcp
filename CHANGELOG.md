@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.8] — 2026-07-01
+
+### Fixed
+- **Server failed to start under `npx` (MCP SDK prerelease drift).** `npx -y @icjia/forgecrawl` crashed on startup with `SyntaxError: The requested module '@modelcontextprotocol/server' does not provide an export named 'StdioServerTransport'`, surfacing in Claude Code as `Failed to reconnect to forgecrawl: -32000`. The dependency was pinned with a caret on a **prerelease** (`"@modelcontextprotocol/server": "^2.0.0-alpha.2"`) and the published tarball ships no lockfile, so every fresh `npx` install re-resolved that range to the newest matching prerelease. `2.0.0-alpha.3` moved `StdioServerTransport` from the package root to the `@modelcontextprotocol/server/stdio` subpath, so `src/server.js`'s root import stopped resolving. **Fix:** pin the SDK to exactly `2.0.0-alpha.2` (never range a prerelease). Existing npx installs must clear the cache to pick this up: `rm -rf ~/.npm/_npx`.
+
 ## [0.1.7] — 2026-05-01
 
 ### Changed
